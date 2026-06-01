@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 198 33% 96%;
+  --foreground: 220 22% 14%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 22% 14%;
+  --primary: 172 66% 28%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 38 72% 54%;
+  --secondary-foreground: 220 22% 14%;
+  --muted: 205 24% 90%;
+  --muted-foreground: 218 12% 40%;
+  --accent: 356 74% 62%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 70% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 205 22% 82%;
+  --input: 205 22% 82%;
+  --ring: 172 66% 28%;
+  --radius: 8px;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  margin: 0;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.mapboxgl-popup-content {
+  border-radius: 8px;
+  font: 13px/1.4 var(--font-geist-sans), ui-sans-serif, system-ui;
+}
