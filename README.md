@@ -18,7 +18,23 @@ npm install
 npm run dev
 ```
 
+On Windows you can also double-click `start.bat` — it installs dependencies on first run, starts the dev server, and opens the browser.
+
 Create `.env.local` from `.env.example` and fill keys as needed.
+
+### API Keys
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `OPENAI_API_KEY` | for real AI scheduling | Schedule optimization via OpenAI |
+| `OPENAI_MODEL` | no | Defaults to `gpt-4.1-mini` |
+| `OPENAI_BASE_URL` | no | Point at an OpenAI-compatible gateway; defaults to the official API |
+| `NEXT_PUBLIC_MAPBOX_TOKEN` | for the route map | Mapbox basemap and geocoding |
+| `SUPABASE_*` | no | Persist generated plans |
+| `WEATHER` / `AMADEUS` / `HOTEL` / `ATTRACTION` / `FOOD` keys | no | Replace fallback data with live vendor APIs |
+| `SEARCH_API_KEY` | no | Defaults to DuckDuckGo Lite |
+
+Every optional provider falls back to built-in mock data, so the app runs end to end with no keys at all. Web search calls time out after 5 seconds, so an unreachable search endpoint degrades to mock data instead of hanging.
 
 ## Real API Integration Points
 

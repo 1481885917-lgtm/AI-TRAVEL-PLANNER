@@ -8,7 +8,8 @@ export function getOpenAIClient() {
   }
 
   client ??= new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
+    apiKey: process.env.OPENAI_API_KEY,
+    ...(process.env.OPENAI_BASE_URL ? { baseURL: process.env.OPENAI_BASE_URL } : {})
   });
 
   return client;
