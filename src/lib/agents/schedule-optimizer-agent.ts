@@ -1,5 +1,5 @@
 import type { AgentContext, DayPlan } from "@/lib/types";
-import { generateJsonWithOpenAI } from "@/lib/providers/openai";
+import { generateJsonWithOpenAI, OPENAI_TIMEOUT_MS } from "@/lib/providers/openai";
 import { tripDates } from "@/lib/utils";
 
 type AiSchedule = {
@@ -41,7 +41,7 @@ export async function scheduleOptimizerAgent(context: AgentContext): Promise<Age
     ]
   };
 
-  const ai = await generateJsonWithOpenAI<AiSchedule>(
+  const { data: ai, usedFallback } = await generateJsonWithOpenAI<AiSchedule>(
     "你是专业旅行行程优化 Agent。只输出 JSON，字段必须包含 days 和 notices。",
     JSON.stringify({
       input: context.input,
@@ -74,6 +74,10 @@ export async function scheduleOptimizerAgent(context: AgentContext): Promise<Age
   return {
     ...context,
     days,
-    notices: ai.notices?.length ? ai.notices : fallback.notices
+    notices: usedFallback
+      ? [...fallback.notices, `AI 优化未在 ${OPENAI_TIMEOUT_MS / 1000} 秒内返回，已改用内置方案生成日程。`]
+      : ai.notices?.length
+        ? ai.notices
+        : fallback.notices
   };
 }
