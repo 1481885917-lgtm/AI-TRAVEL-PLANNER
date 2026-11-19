@@ -3,6 +3,8 @@ import type { WebSearchResult } from "@/lib/types";
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125 Safari/537.36";
 
+const SEARCH_TIMEOUT_MS = 5000;
+
 export async function searchWeb(query: string, limit = 5): Promise<WebSearchResult[]> {
   if (process.env.SEARCH_API_KEY) {
     return searchWithConfiguredProvider(query, limit);
@@ -21,13 +23,19 @@ async function searchWithConfiguredProvider(query: string, limit: number): Promi
   url.searchParams.set("q", query);
   url.searchParams.set("count", String(limit));
 
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${process.env.SEARCH_API_KEY}`,
-      "User-Agent": USER_AGENT
-    },
-    cache: "no-store"
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${process.env.SEARCH_API_KEY}`,
+        "User-Agent": USER_AGENT
+      },
+      cache: "no-store",
+      signal: AbortSignal.timeout(SEARCH_TIMEOUT_MS)
+    });
+  } catch {
+    return searchDuckDuckGoLite(query, limit);
+  }
 
   if (!response.ok) {
     return searchDuckDuckGoLite(query, limit);
@@ -72,7 +80,8 @@ async function searchDuckDuckGoLite(query: string, limit: number): Promise<WebSe
   try {
     const response = await fetch(url, {
       headers: { "User-Agent": USER_AGENT },
-      cache: "no-store"
+      cache: "no-store",
+      signal: AbortSignal.timeout(SEARCH_TIMEOUT_MS)
     });
 
     if (!response.ok) {

@@ -1,5 +1,7 @@
 import type { Coordinates, RouteStop } from "@/lib/types";
 
+const GEO_TIMEOUT_MS = 5000;
+
 const knownCoordinates: Record<string, Coordinates> = {
   北京: { lng: 116.4074, lat: 39.9042 },
   上海: { lng: 121.4737, lat: 31.2304 },
@@ -36,7 +38,7 @@ export async function geocodeCity(city: string): Promise<Coordinates> {
   url.searchParams.set("language", "zh");
   url.searchParams.set("limit", "1");
 
-  const response = await fetch(url);
+  const response = await fetch(url, { signal: AbortSignal.timeout(GEO_TIMEOUT_MS) });
   if (!response.ok) {
     return { lng: 116.4074 + city.length, lat: 31.2304 + city.length / 3 };
   }
