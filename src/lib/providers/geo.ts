@@ -28,24 +28,37 @@ export async function geocodeCity(city: string): Promise<Coordinates> {
     return cached;
   }
 
-  const token = process.env.MAPBOX_TOKEN ?? process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-  if (!token) {
+  const key = process.env.NEXT_PUBLIC_AMAP_KEY;
+  if (!key) {
     return { lng: 116.4074 + city.length, lat: 31.2304 + city.length / 3 };
   }
 
-  const url = new URL(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(city)}.json`);
-  url.searchParams.set("access_token", token);
-  url.searchParams.set("language", "zh");
-  url.searchParams.set("limit", "1");
+  // 高德 Web 服务地理编码，需要 Key 同时勾选了「Web服务」平台；失败时回落内置坐标
+  const url = new URL("https://restapi.amap.com/v3/geocode/geo");
+  url.searchParams.set("key", key);
+  url.searchParams.set("address", city);
+  url.searchParams.set("output", "JSON");
 
-  const response = await fetch(url, { signal: AbortSignal.timeout(GEO_TIMEOUT_MS) });
-  if (!response.ok) {
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(GEO_TIMEOUT_MS) });
+    if (!response.ok) {
+      return { lng: 116.4074 + city.length, lat: 31.2304 + city.length / 3 };
+    }
+
+    const data = (await response.json()) as {
+      status?: string;
+      geocodes?: Array<{ location?: string }>;
+    };
+    const location = data.status === "1" ? data.geocodes?.[0]?.location : undefined;
+    if (!location) {
+      return { lng: 116.4074 + city.length, lat: 31.2304 + city.length / 3 };
+    }
+
+    const [lng, lat] = location.split(",").map(Number);
+    return Number.isFinite(lng) && Number.isFinite(lat) ? { lng, lat } : { lng: 116.4074, lat: 39.9042 };
+  } catch {
     return { lng: 116.4074 + city.length, lat: 31.2304 + city.length / 3 };
   }
-
-  const data = (await response.json()) as { features?: Array<{ center: [number, number] }> };
-  const center = data.features?.[0]?.center;
-  return center ? { lng: center[0], lat: center[1] } : { lng: 116.4074, lat: 39.9042 };
 }
 
 export async function buildRoute(cities: string[]): Promise<RouteStop[]> {
