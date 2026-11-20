@@ -27,14 +27,16 @@ Create `.env.local` from `.env.example` and fill keys as needed.
 | Variable | Required | Purpose |
 |---|---|---|
 | `OPENAI_API_KEY` | for real AI scheduling | Schedule optimization via OpenAI |
-| `OPENAI_MODEL` | no | Defaults to `gpt-4.1-mini` |
+| `OPENAI_MODEL` | no | Defaults to `gpt-4.1-mini`. gpt-5/o-series models are detected automatically and switched to `reasoning_effort: minimal` + `max_completion_tokens`, which is what keeps long JSON responses fast |
 | `OPENAI_BASE_URL` | no | Point at an OpenAI-compatible gateway; defaults to the official API |
 | `NEXT_PUBLIC_MAPBOX_TOKEN` | for the route map | Mapbox basemap and geocoding |
 | `SUPABASE_*` | no | Persist generated plans |
 | `WEATHER` / `AMADEUS` / `HOTEL` / `ATTRACTION` / `FOOD` keys | no | Replace fallback data with live vendor APIs |
 | `SEARCH_API_KEY` | no | Defaults to DuckDuckGo Lite |
 
-Every optional provider falls back to built-in mock data, so the app runs end to end with no keys at all. Web search calls time out after 5 seconds, so an unreachable search endpoint degrades to mock data instead of hanging.
+Every optional provider falls back to built-in mock data, so the app runs end to end with no keys at all.
+
+Timeouts keep a slow or unreachable provider from hanging the request: web search gives up after 3 seconds and the OpenAI call after 45 seconds, both degrading to the built-in plan. When that happens the response says so under 注意事项, so a fallback run is never mistaken for an AI-optimized one.
 
 ## Real API Integration Points
 
