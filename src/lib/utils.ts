@@ -1,5 +1,5 @@
 import { clsx, type ClassValue } from "clsx";
-import { differenceInCalendarDays, eachDayOfInterval, parseISO } from "date-fns";
+import { differenceInCalendarDays, eachDayOfInterval, format, parseISO } from "date-fns";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
@@ -10,7 +10,7 @@ export function tripDates(departDate: string, returnDate: string) {
   return eachDayOfInterval({
     start: parseISO(departDate),
     end: parseISO(returnDate)
-  }).map((date) => date.toISOString().slice(0, 10));
+  }).map((date) => format(date, "yyyy-MM-dd"));
 }
 
 export function tripNights(departDate: string, returnDate: string) {

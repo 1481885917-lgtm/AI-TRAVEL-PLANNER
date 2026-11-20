@@ -42,7 +42,7 @@ export async function scheduleOptimizerAgent(context: AgentContext): Promise<Age
   };
 
   const { data: ai, usedFallback } = await generateJsonWithOpenAI<AiSchedule>(
-    "你是专业旅行行程优化 Agent。只输出 JSON，字段必须包含 days 和 notices。",
+    "你是专业旅行行程优化 Agent。只输出 JSON，格式为 {\"days\":[{\"day\":1,\"date\":\"YYYY-MM-DD\",\"city\":\"城市名\",\"title\":\"当日主题\",\"morning\":\"上午安排\",\"afternoon\":\"下午安排\",\"evening\":\"晚上安排\",\"cityTransport\":\"市内交通建议\",\"notes\":[\"提示\"]}],\"notices\":[\"字符串提示\"]}。day 必须是数字，notices 必须是字符串数组。",
     JSON.stringify({
       input: context.input,
       route: context.route,
@@ -57,12 +57,15 @@ export async function scheduleOptimizerAgent(context: AgentContext): Promise<Age
     fallback
   );
 
-  const days: DayPlan[] = fallbackDays.map((fallbackDay) => {
-    const aiDay = ai.days.find((item) => item.day === fallbackDay.day) ?? fallbackDay;
+  const days: DayPlan[] = fallbackDays.map((fallbackDay, index) => {
+    const aiDay = pickAiDay(ai.days, fallbackDay, index);
     const city = aiDay.city || fallbackDay.city;
     return {
       ...fallbackDay,
       ...aiDay,
+      day: fallbackDay.day,
+      date: fallbackDay.date,
+      title: aiDay.title || fallbackDay.title,
       city,
       weather: context.weather?.find((item) => item.city === city && item.date === fallbackDay.date),
       attractions: (context.attractions ?? []).filter((item) => item.city === city).slice(0, 2),
@@ -76,8 +79,36 @@ export async function scheduleOptimizerAgent(context: AgentContext): Promise<Age
     days,
     notices: usedFallback
       ? [...fallback.notices, `AI 优化未在 ${OPENAI_TIMEOUT_MS / 1000} 秒内返回，已改用内置方案生成日程。`]
-      : ai.notices?.length
-        ? ai.notices
+      : normalizeNotices(ai.notices).length
+        ? normalizeNotices(ai.notices)
         : fallback.notices
   };
+}
+
+// AI 可能返回字符串 "1" 或数字 1，按位置匹配最稳，day 字段仅作二次校验
+function pickAiDay(aiDays: AiSchedule["days"], fallbackDay: DayPlan, index: number) {
+  const list = Array.isArray(aiDays) ? aiDays : [];
+  const byIndex = list[index];
+  if (byIndex && (byIndex.day === undefined || Number(byIndex.day) === fallbackDay.day)) {
+    return byIndex;
+  }
+  return list.find((item) => Number(item.day) === fallbackDay.day) ?? fallbackDay;
+}
+
+// notices 可能是字符串，也可能是 { type, message } 对象，统一成字符串
+function normalizeNotices(notices: unknown): string[] {
+  if (!Array.isArray(notices)) {
+    return [];
+  }
+  return notices
+    .map((notice) => {
+      if (typeof notice === "string") {
+        return notice;
+      }
+      if (notice && typeof notice === "object" && "message" in notice) {
+        return String((notice as { message: unknown }).message);
+      }
+      return null;
+    })
+    .filter((notice): notice is string => Boolean(notice));
 }
