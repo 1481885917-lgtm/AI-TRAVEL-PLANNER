@@ -3,7 +3,7 @@ import type { WebSearchResult } from "@/lib/types";
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125 Safari/537.36";
 
-const SEARCH_TIMEOUT_MS = 5000;
+const SEARCH_TIMEOUT_MS = 3000;
 
 export async function searchWeb(query: string, limit = 5): Promise<WebSearchResult[]> {
   if (process.env.SEARCH_API_KEY) {
