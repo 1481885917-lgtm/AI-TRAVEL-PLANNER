@@ -28,7 +28,9 @@ export async function geocodeCity(city: string): Promise<Coordinates> {
     return cached;
   }
 
-  const key = process.env.NEXT_PUBLIC_AMAP_KEY;
+  // 高德一个 Key 只对应一个服务平台：「Web服务」用于服务端地理编码，
+  // 「Web端(JS API)」用于前端地图。两者是独立的 Key，不能复用。
+  const key = process.env.AMAP_KEY ?? process.env.NEXT_PUBLIC_AMAP_KEY;
   if (!key) {
     return { lng: 116.4074 + city.length, lat: 31.2304 + city.length / 3 };
   }
