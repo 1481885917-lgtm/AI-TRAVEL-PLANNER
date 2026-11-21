@@ -23,19 +23,17 @@ const knownCoordinates: Record<string, Coordinates> = {
 };
 
 export async function geocodeCity(city: string): Promise<Coordinates> {
-  const cached = knownCoordinates[city];
-  if (cached) {
-    return cached;
-  }
+  const fallback = knownCoordinates[city] ?? { lng: 116.4074 + city.length, lat: 31.2304 + city.length / 3 };
 
   // 高德一个 Key 只对应一个服务平台：「Web服务」用于服务端地理编码，
   // 「Web端(JS API)」用于前端地图。两者是独立的 Key，不能复用。
   const key = process.env.AMAP_KEY ?? process.env.NEXT_PUBLIC_AMAP_KEY;
   if (!key) {
-    return { lng: 116.4074 + city.length, lat: 31.2304 + city.length / 3 };
+    return fallback;
   }
 
-  // 高德 Web 服务地理编码，需要 Key 同时勾选了「Web服务」平台；失败时回落内置坐标
+  // 高德返回 GCJ-02 坐标，与高德底图完全一致，标记不会有偏移；
+  // 内置表是 WGS84，仅作离线兜底。
   const url = new URL("https://restapi.amap.com/v3/geocode/geo");
   url.searchParams.set("key", key);
   url.searchParams.set("address", city);
@@ -44,7 +42,7 @@ export async function geocodeCity(city: string): Promise<Coordinates> {
   try {
     const response = await fetch(url, { signal: AbortSignal.timeout(GEO_TIMEOUT_MS) });
     if (!response.ok) {
-      return { lng: 116.4074 + city.length, lat: 31.2304 + city.length / 3 };
+      return fallback;
     }
 
     const data = (await response.json()) as {
@@ -53,13 +51,13 @@ export async function geocodeCity(city: string): Promise<Coordinates> {
     };
     const location = data.status === "1" ? data.geocodes?.[0]?.location : undefined;
     if (!location) {
-      return { lng: 116.4074 + city.length, lat: 31.2304 + city.length / 3 };
+      return fallback;
     }
 
     const [lng, lat] = location.split(",").map(Number);
-    return Number.isFinite(lng) && Number.isFinite(lat) ? { lng, lat } : { lng: 116.4074, lat: 39.9042 };
+    return Number.isFinite(lng) && Number.isFinite(lat) ? { lng, lat } : fallback;
   } catch {
-    return { lng: 116.4074 + city.length, lat: 31.2304 + city.length / 3 };
+    return fallback;
   }
 }
 
